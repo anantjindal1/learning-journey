@@ -66,7 +66,132 @@ const MOTIVATIONAL_QUOTES: MotivationalQuote[] = [
     bgClass: 'bg-rose-600',
     textClass: 'text-slate-50',
   },
-  // ...additional quotes up to ~200 entries omitted here for brevity...
+  {
+    text: 'Success is not final, failure is not fatal: it is the courage to continue that counts.',
+    author: 'Winston Churchill',
+    bgClass: 'bg-fuchsia-600',
+    textClass: 'text-slate-50',
+  },
+  {
+    text: 'You don’t have to be great to start, but you have to start to be great.',
+    author: 'Zig Ziglar',
+    bgClass: 'bg-teal-500',
+    textClass: 'text-slate-950',
+  },
+  {
+    text: 'Don’t watch the clock; do what it does. Keep going.',
+    author: 'Sam Levenson',
+    bgClass: 'bg-violet-600',
+    textClass: 'text-slate-50',
+  },
+  {
+    text: 'The secret of getting ahead is getting started.',
+    author: 'Mark Twain',
+    bgClass: 'bg-blue-600',
+    textClass: 'text-slate-50',
+  },
+  {
+    text: 'Dream big. Start small. Act now.',
+    author: 'Robin Sharma',
+    bgClass: 'bg-emerald-500',
+    textClass: 'text-slate-950',
+  },
+  {
+    text: 'If you are not willing to risk the usual, you will have to settle for the ordinary.',
+    author: 'Jim Rohn',
+    bgClass: 'bg-amber-600',
+    textClass: 'text-slate-950',
+  },
+  {
+    text: 'Start where you are. Use what you have. Do what you can.',
+    author: 'Arthur Ashe',
+    bgClass: 'bg-sky-500',
+    textClass: 'text-slate-950',
+  },
+  {
+    text: 'Small daily improvements are the key to staggering long‑term results.',
+    author: 'Unknown',
+    bgClass: 'bg-lime-500',
+    textClass: 'text-slate-950',
+  },
+  {
+    text: 'You miss 100% of the shots you don’t take.',
+    author: 'Wayne Gretzky',
+    bgClass: 'bg-cyan-600',
+    textClass: 'text-slate-50',
+  },
+  {
+    text: 'Great things are done by a series of small things brought together.',
+    author: 'Vincent van Gogh',
+    bgClass: 'bg-orange-500',
+    textClass: 'text-slate-950',
+  },
+  {
+    text: 'Motivation gets you going, but discipline keeps you growing.',
+    author: 'John C. Maxwell',
+    bgClass: 'bg-rose-500',
+    textClass: 'text-slate-50',
+  },
+  {
+    text: 'If you get tired, learn to rest, not to quit.',
+    author: 'Banksy',
+    bgClass: 'bg-slate-700',
+    textClass: 'text-slate-50',
+  },
+  {
+    text: 'The way to get started is to quit talking and begin doing.',
+    author: 'Walt Disney',
+    bgClass: 'bg-indigo-500',
+    textClass: 'text-slate-50',
+  },
+  {
+    text: 'What you do every day matters more than what you do once in a while.',
+    author: 'Gretchen Rubin',
+    bgClass: 'bg-emerald-700',
+    textClass: 'text-slate-50',
+  },
+  {
+    text: 'Your only limit is your mind.',
+    author: 'Unknown',
+    bgClass: 'bg-purple-600',
+    textClass: 'text-slate-50',
+  },
+  {
+    text: 'The man who moves a mountain begins by carrying away small stones.',
+    author: 'Confucius',
+    bgClass: 'bg-stone-700',
+    textClass: 'text-slate-50',
+  },
+  {
+    text: 'Focus on being productive instead of busy.',
+    author: 'Tim Ferriss',
+    bgClass: 'bg-blue-700',
+    textClass: 'text-slate-50',
+  },
+  {
+    text: 'Either you run the day or the day runs you.',
+    author: 'Jim Rohn',
+    bgClass: 'bg-amber-700',
+    textClass: 'text-slate-50',
+  },
+  {
+    text: 'It’s not about having time. It’s about making time.',
+    author: 'Unknown',
+    bgClass: 'bg-pink-500',
+    textClass: 'text-slate-50',
+  },
+  {
+    text: 'The best way out is always through.',
+    author: 'Robert Frost',
+    bgClass: 'bg-green-700',
+    textClass: 'text-slate-50',
+  },
+  {
+    text: 'Do something today that your future self will thank you for.',
+    author: 'Unknown',
+    bgClass: 'bg-cyan-700',
+    textClass: 'text-slate-50',
+  },
 ]
 
 const App: FC = () => {
