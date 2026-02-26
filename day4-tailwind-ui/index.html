@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TodoAI</title>
+    <!-- Using Tailwind CDN for rapid prototyping and utility-first styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <!-- Using a neutral slate palette with blue accents; layout is flex-column so footer can sit at the bottom -->
+  <body class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 flex flex-col">
+    <!-- Navbar: keeps branding and dark mode control visually anchored at the top -->
+    <nav class="border-b border-slate-200/70 bg-white/80 dark:bg-slate-900/80 dark:border-slate-800 backdrop-blur">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white font-semibold shadow-sm">
+            TA
+          </span>
+          <div class="flex flex-col">
+            <span class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-50">
+              TodoAI
+            </span>
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              Focused, minimal to-do list
+            </span>
+          </div>
+        </div>
+
+        <!-- Dark mode toggle is purely visual here; no JS wiring, but the structure supports easy enhancement later -->
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400"
+          aria-label="Toggle dark mode"
+        >
+          <span class="relative flex h-5 w-9 items-center rounded-full bg-slate-200 dark:bg-slate-700 p-0.5">
+            <span class="h-4 w-4 rounded-full bg-white dark:bg-slate-100 shadow-sm translate-x-0 dark:translate-x-4 transition-transform"></span>
+          </span>
+          <span class="hidden sm:inline">
+            Dark mode
+          </span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main content is centered with a max width to keep the to-do UI focused -->
+    <main class="flex-1">
+      <section class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+        <!-- Input bar: grouped input + button in a subtle card to draw attention to task creation -->
+        <div class="bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm px-4 py-5 sm:px-5 sm:py-6">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <label for="new-task" class="sr-only">Add a new task</label>
+            <input
+              id="new-task"
+              type="text"
+              placeholder="What do you want to get done today?"
+              class="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-2.5 text-sm sm:text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <button
+              type="button"
+              class="mt-1 sm:mt-0 inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 dark:focus-visible:ring-offset-slate-900"
+            >
+              Add
+            </button>
+          </div>
+
+          <!-- Filter row: keeps All/Active/Completed clearly discoverable and aligned with to-do UX expectations -->
+          <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <div class="inline-flex rounded-full bg-slate-100 dark:bg-slate-800 p-0.5">
+              <button
+                type="button"
+                class="inline-flex items-center rounded-full bg-white dark:bg-slate-900 px-3 py-1 text-xs sm:text-sm font-medium text-blue-600 shadow-sm"
+                aria-pressed="true"
+              >
+                All
+              </button>
+              <button
+                type="button"
+                class="inline-flex items-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600"
+                aria-pressed="false"
+              >
+                Active
+              </button>
+              <button
+                type="button"
+                class="inline-flex items-center rounded-full px-3 py-1 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600"
+                aria-pressed="false"
+              >
+                Completed
+              </button>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Filter your list without losing focus.
+            </p>
+          </div>
+        </div>
+
+        <!-- Task list: each item is a compact row with checkbox, title, priority badge, and delete affordance -->
+        <section aria-label="Task list" class="bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm divide-y divide-slate-100 dark:divide-slate-800">
+          <div class="px-4 py-3 sm:px-5 sm:py-4 flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-slate-800 dark:text-slate-100">
+              Today
+            </h2>
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              3 tasks · 2 remaining
+            </span>
+          </div>
+
+          <!-- Sample task 1: active, high priority -->
+          <div class="px-4 py-3 sm:px-5 sm:py-4 flex items-center gap-3">
+            <input
+              id="task-1"
+              type="checkbox"
+              class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            <div class="flex-1 min-w-0">
+              <label for="task-1" class="block text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                Draft product spec for TodoAI
+              </label>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Outline core flows and edge cases.
+              </p>
+            </div>
+            <span class="inline-flex items-center rounded-full bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300 px-2.5 py-0.5 text-xs font-medium">
+              High
+            </span>
+            <button
+              type="button"
+              class="ml-1 inline-flex items-center justify-center rounded-full p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+              aria-label="Delete task"
+            >
+              <span class="text-base leading-none">&times;</span>
+            </button>
+          </div>
+
+          <!-- Sample task 2: completed to demonstrate done styling -->
+          <div class="px-4 py-3 sm:px-5 sm:py-4 flex items-center gap-3 bg-slate-50/60 dark:bg-slate-900/60">
+            <input
+              id="task-2"
+              type="checkbox"
+              checked
+              class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            <div class="flex-1 min-w-0 opacity-70">
+              <label for="task-2" class="block text-sm font-medium text-slate-500 dark:text-slate-400 line-through truncate">
+                Sync tasks with calendar
+              </label>
+              <p class="text-xs text-slate-400 dark:text-slate-500 line-through">
+                Connect to primary Google Calendar.
+              </p>
+            </div>
+            <span class="inline-flex items-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 px-2.5 py-0.5 text-xs font-medium">
+              Low
+            </span>
+            <button
+              type="button"
+              class="ml-1 inline-flex items-center justify-center rounded-full p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+              aria-label="Delete task"
+            >
+              <span class="text-base leading-none">&times;</span>
+            </button>
+          </div>
+
+          <!-- Sample task 3: active, low priority -->
+          <div class="px-4 py-3 sm:px-5 sm:py-4 flex items-center gap-3">
+            <input
+              id="task-3"
+              type="checkbox"
+              class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            <div class="flex-1 min-w-0">
+              <label for="task-3" class="block text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                Review UX copy for empty states
+              </label>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Make sure microcopy matches AI tone.
+              </p>
+            </div>
+            <span class="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 px-2.5 py-0.5 text-xs font-medium">
+              Low
+            </span>
+            <button
+              type="button"
+              class="ml-1 inline-flex items-center justify-center rounded-full p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+              aria-label="Delete task"
+            >
+              <span class="text-base leading-none">&times;</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Footer inside main card area: mirrors common to-do apps by summarizing remaining work -->
+        <footer class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1 pt-2">
+          <span>
+            2 tasks remaining
+          </span>
+          <span class="hidden sm:inline">
+            Built with Tailwind CSS · TodoAI
+          </span>
+        </footer>
+      </section>
+    </main>
+
+    <!-- Global footer: keeps the page feeling finished when scrolled on taller screens -->
+    <footer class="border-t border-slate-200/70 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between">
+        <span>TodoAI · Minimal to-do interface</span>
+        <span class="hidden sm:inline">No JavaScript yet — just clean HTML & Tailwind.</span>
+      </div>
+    </footer>
+  </body>
+</html>
