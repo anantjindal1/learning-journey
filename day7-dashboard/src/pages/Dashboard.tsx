@@ -287,6 +287,25 @@ const Dashboard: FC = () => {
     return () => window.clearTimeout(timeoutId)
   }, [notes, hasLoadedNotes])
 
+  useEffect(() => {
+    const fetchWeather = async (): Promise<void> => {
+      setWeatherStatus('loading')
+      try {
+        const response = await fetch(WEATHER_URL)
+        if (!response.ok) {
+          throw new Error('Failed to fetch weather')
+        }
+        const data: WeatherData = await response.json()
+        setWeather(data)
+        setWeatherStatus('loaded')
+      } catch {
+        setWeatherStatus('error')
+      }
+    }
+
+    fetchWeather()
+  }, [])
+
   const weatherEmoji = useMemo(() => {
     if (!weather) return '❓'
     const code = weather.current.weathercode
