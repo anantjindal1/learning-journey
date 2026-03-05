@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Assistant</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+    }
+    .container {
+      max-width: 800px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 2rem);
+    }
+    header {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    h1 { font-size: 1.75rem; color: #f8fafc; }
+    .subtitle { color: #94a3b8; font-size: 0.875rem; margin-top: 0.25rem; }
+    .system-prompt {
+      margin-bottom: 1rem;
+    }
+    .system-prompt label {
+      display: block;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-bottom: 0.25rem;
+    }
+    .system-prompt select {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 0.5rem;
+      color: #e2e8f0;
+      font-size: 0.875rem;
+    }
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem;
+      background: #1e293b;
+      border-radius: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .message {
+      max-width: 85%;
+      padding: 0.75rem 1rem;
+      border-radius: 1rem;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+    .message.user {
+      align-self: flex-end;
+      background: #2563eb;
+      color: #fff;
+    }
+    .message.ai {
+      align-self: flex-start;
+      background: #334155;
+      color: #e2e8f0;
+      white-space: pre-wrap;
+    }
+    .message.ai.streaming::after {
+      content: '▌';
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+    .input-area {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .input-area input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 0.5rem;
+      color: #e2e8f0;
+      font-size: 1rem;
+    }
+    .input-area input:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+    .input-area button {
+      padding: 0.75rem 1.25rem;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .input-area button:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+    .input-area button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+    .thinking { color: #38bdf8; }
+    .clear-btn {
+      padding: 0.25rem 0.5rem;
+      background: transparent;
+      border: 1px solid #475569;
+      color: #94a3b8;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .clear-btn:hover { background: #334155; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🤖 AI Assistant</h1>
+      <p class="subtitle">Powered by Groq + Llama 3</p>
+    </header>
+
+    <div class="system-prompt">
+      <label>System prompt</label>
+      <select id="systemPromptSelect">
+        <option value="You are a helpful productivity assistant. Be concise.">Productivity Assistant</option>
+        <option value="You are an expert code reviewer. Point out bugs and improvements.">Code Reviewer</option>
+        <option value="You are a writing coach. Help improve clarity and style.">Writing Coach</option>
+        <option value="You are a devil's advocate. Challenge assumptions constructively.">Devil's Advocate</option>
+      </select>
+    </div>
+
+    <div class="chat-area" id="chatArea"></div>
+
+    <div class="status-bar">
+      <span id="statusText"></span>
+      <span id="tokenCount"></span>
+      <button class="clear-btn" id="clearBtn">Clear chat</button>
+    </div>
+
+    <div class="input-area">
+      <input type="text" id="input" placeholder="Type your message..." autocomplete="off">
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const chatArea = document.getElementById('chatArea')
+    const input = document.getElementById('input')
+    const sendBtn = document.getElementById('sendBtn')
+    const systemPromptSelect = document.getElementById('systemPromptSelect')
+    const statusText = document.getElementById('statusText')
+    const tokenCount = document.getElementById('tokenCount')
+    const clearBtn = document.getElementById('clearBtn')
+
+    let conversationHistory = []
+    let isStreaming = false
+
+    function appendMessage(role, content) {
+      const div = document.createElement('div')
+      div.className = `message ${role}`
+      div.textContent = content
+      chatArea.appendChild(div)
+      return div
+    }
+
+    function showThinking() {
+      statusText.textContent = '● AI is thinking...'
+      statusText.className = 'thinking'
+    }
+
+    function hideThinking() {
+      statusText.textContent = ''
+      statusText.className = ''
+    }
+
+    function updateTokenCount(len) {
+      const approxTokens = Math.ceil(len / 4)
+      tokenCount.textContent = len > 0 ? `~${approxTokens} tokens` : ''
+    }
+
+    function scrollToBottom() {
+      chatArea.scrollTop = chatArea.scrollHeight
+    }
+
+    async function sendMessage() {
+      const message = input.value.trim()
+      if (!message || isStreaming) return
+
+      appendMessage('user', message)
+      input.value = ''
+
+      const aiDiv = appendMessage('ai', '')
+      aiDiv.classList.add('streaming')
+      showThinking()
+      sendBtn.disabled = true
+      isStreaming = true
+
+      let fullResponse = ''
+      let buffer = ''
+
+      try {
+        const response = await fetch('/chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message,
+            history: conversationHistory,
+            system: systemPromptSelect.value
+          })
+        })
+
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || ''
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                if (data.token) {
+                  fullResponse += data.token
+                  aiDiv.textContent = fullResponse
+                  aiDiv.classList.add('streaming')
+                  updateTokenCount(fullResponse.length)
+                  scrollToBottom()
+                }
+                if (data.done) {
+                  aiDiv.classList.remove('streaming')
+                  hideThinking()
+                  conversationHistory.push(
+                    { role: 'user', content: message },
+                    { role: 'assistant', content: fullResponse }
+                  )
+                }
+                if (data.error) {
+                  aiDiv.textContent = 'Error: ' + data.error
+                  aiDiv.classList.remove('streaming')
+                  hideThinking()
+                }
+              } catch (_) {}
+            }
+          }
+        }
+
+        if (buffer.trim()) {
+          const line = buffer
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              if (data.token) fullResponse += data.token
+              if (data.done) {
+                aiDiv.classList.remove('streaming')
+                hideThinking()
+                conversationHistory.push(
+                  { role: 'user', content: message },
+                  { role: 'assistant', content: fullResponse }
+                )
+              }
+              if (data.error) {
+                aiDiv.textContent = 'Error: ' + data.error
+                aiDiv.classList.remove('streaming')
+                hideThinking()
+              }
+            } catch (_) {}
+          }
+        }
+      } catch (e) {
+        aiDiv.textContent = 'Connection error: ' + e.message
+        aiDiv.classList.remove('streaming')
+        hideThinking()
+      } finally {
+        sendBtn.disabled = false
+        isStreaming = false
+        updateTokenCount(0)
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage)
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault()
+        sendMessage()
+      }
+    })
+
+    clearBtn.addEventListener('click', () => {
+      conversationHistory = []
+      chatArea.innerHTML = ''
+      tokenCount.textContent = ''
+      hideThinking()
+    })
+  </script>
+</body>
+</html>
