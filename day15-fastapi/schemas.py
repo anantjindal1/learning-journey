@@ -5,7 +5,7 @@ Keeps API contracts separate from database models.
 
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, Field, computed_field, field_validator
+from pydantic import BaseModel, EmailStr, Field, computed_field, field_validator
 
 
 def _validate_tags(tags: List[str]) -> List[str]:
@@ -203,3 +203,42 @@ class StatsResponse(BaseModel):
     done: int
     pending: int
     by_priority: dict
+
+
+# -----------------------------------------------------------------------------
+# Auth schemas
+# -----------------------------------------------------------------------------
+
+
+class UserCreate(BaseModel):
+    """Payload for user registration."""
+
+    email: EmailStr = Field(..., description="User email")
+    password: str = Field(..., min_length=8, description="Password (min 8 chars)")
+    full_name: str = Field(..., min_length=2, description="Display name (min 2 chars)")
+
+class UserResponse(BaseModel):
+    """User data returned by API. Never includes password."""
+
+    id: int
+    email: str
+    full_name: str
+    is_active: bool
+    created_at: str
+
+    model_config = {"from_attributes": True}
+
+
+class LoginRequest(BaseModel):
+    """Payload for login (alternative to OAuth2PasswordRequestForm)."""
+
+    email: str
+    password: str
+
+
+class TokenResponse(BaseModel):
+    """OAuth2 token response with user info."""
+
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse

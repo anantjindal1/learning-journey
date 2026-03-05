@@ -9,7 +9,7 @@ from typing import List, Optional
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from models import NoteModel
+from models import NoteModel, UserModel
 from schemas import NoteCreate, NoteUpdate, Status
 
 
@@ -20,15 +20,16 @@ def _tags_to_db(tags: List[str]) -> str:
 
 def _build_notes_query(
     db: Session,
+    user_id: int,
     priority: Optional[str] = None,
     status_filter: Optional[Status] = None,
     tag: Optional[str] = None,
 ):
     """
-    Build base query with optional filters.
+    Build base query with optional filters. Always filters by user_id.
     Does not apply limit/offset—caller does that.
     """
-    q = db.query(NoteModel)
+    q = db.query(NoteModel).filter(NoteModel.user_id == user_id)
 
     if priority is not None:
         q = q.filter(NoteModel.priority == priority)
@@ -51,6 +52,7 @@ def _build_notes_query(
 
 def get_notes(
     db: Session,
+    user_id: int,
     priority: Optional[str] = None,
     status_filter: Optional[Status] = None,
     tag: Optional[str] = None,
@@ -58,41 +60,47 @@ def get_notes(
     offset: int = 0,
 ) -> List[NoteModel]:
     """
-    Fetch notes with optional filters and pagination.
+    Fetch notes for a user with optional filters and pagination.
     Returns list of NoteModel for the requested page.
     """
-    q = _build_notes_query(db, priority, status_filter, tag)
+    q = _build_notes_query(db, user_id, priority, status_filter, tag)
     return q.order_by(NoteModel.id).offset(offset).limit(limit).all()
 
 
 def get_notes_count(
     db: Session,
+    user_id: int,
     priority: Optional[str] = None,
     status_filter: Optional[Status] = None,
     tag: Optional[str] = None,
 ) -> int:
     """
-    Count notes matching the given filters.
+    Count notes matching the given filters for a user.
     Used for pagination total.
     """
-    q = _build_notes_query(db, priority, status_filter, tag)
+    q = _build_notes_query(db, user_id, priority, status_filter, tag)
     return q.count()
 
 
-def get_note(db: Session, note_id: int) -> Optional[NoteModel]:
+def get_note(db: Session, note_id: int, user_id: int) -> Optional[NoteModel]:
     """
-    Fetch a single note by id.
-    Returns None if not found.
+    Fetch a single note by id for a specific user.
+    Returns None if not found or not owned by user.
     """
-    return db.query(NoteModel).filter(NoteModel.id == note_id).first()
+    return (
+        db.query(NoteModel)
+        .filter(NoteModel.id == note_id, NoteModel.user_id == user_id)
+        .first()
+    )
 
 
-def create_note(db: Session, note: NoteCreate) -> NoteModel:
+def create_note(db: Session, note: NoteCreate, user_id: int) -> NoteModel:
     """
-    Insert a new note into the database.
+    Insert a new note into the database for a user.
     Returns the created NoteModel with id and timestamps set.
     """
     db_note = NoteModel(
+        user_id=user_id,
         title=note.title,
         content=note.content,
         priority=note.priority.value,
@@ -105,12 +113,12 @@ def create_note(db: Session, note: NoteCreate) -> NoteModel:
     return db_note
 
 
-def replace_note(db: Session, note_id: int, note: NoteCreate) -> Optional[NoteModel]:
+def replace_note(db: Session, note_id: int, note: NoteCreate, user_id: int) -> Optional[NoteModel]:
     """
     Replace an entire note with new data from NoteCreate.
     Resets done to False. Returns the updated NoteModel or None if not found.
     """
-    db_note = get_note(db, note_id)
+    db_note = get_note(db, note_id, user_id)
     if not db_note:
         return None
 
@@ -127,13 +135,13 @@ def replace_note(db: Session, note_id: int, note: NoteCreate) -> Optional[NoteMo
     return db_note
 
 
-def update_note(db: Session, note_id: int, note: NoteUpdate) -> Optional[NoteModel]:
+def update_note(db: Session, note_id: int, note: NoteUpdate, user_id: int) -> Optional[NoteModel]:
     """
     Partially update a note. Only provided fields are changed.
     updated_at is set automatically by the model's onupdate.
     Returns the updated NoteModel or None if not found.
     """
-    db_note = get_note(db, note_id)
+    db_note = get_note(db, note_id, user_id)
     if not db_note:
         return None
 
@@ -152,12 +160,12 @@ def update_note(db: Session, note_id: int, note: NoteUpdate) -> Optional[NoteMod
     return db_note
 
 
-def delete_note(db: Session, note_id: int) -> bool:
+def delete_note(db: Session, note_id: int, user_id: int) -> bool:
     """
-    Delete a note by id.
+    Delete a note by id for a specific user.
     Returns True if deleted, False if not found.
     """
-    db_note = get_note(db, note_id)
+    db_note = get_note(db, note_id, user_id)
     if not db_note:
         return False
     db.delete(db_note)
@@ -165,18 +173,19 @@ def delete_note(db: Session, note_id: int) -> bool:
     return True
 
 
-def get_stats(db: Session) -> dict:
+def get_stats(db: Session, user_id: int) -> dict:
     """
-    Return business metrics: total, done, pending, and counts by priority.
+    Return business metrics for a user's notes: total, done, pending, by priority.
     """
-    total = db.query(NoteModel).count()
-    done = db.query(NoteModel).filter(NoteModel.done == True).count()
+    base = db.query(NoteModel).filter(NoteModel.user_id == user_id)
+    total = base.count()
+    done = base.filter(NoteModel.done == True).count()
     pending = total - done
 
     by_priority = {
-        "high": db.query(NoteModel).filter(NoteModel.priority == "high").count(),
-        "normal": db.query(NoteModel).filter(NoteModel.priority == "normal").count(),
-        "low": db.query(NoteModel).filter(NoteModel.priority == "low").count(),
+        "high": base.filter(NoteModel.priority == "high").count(),
+        "normal": base.filter(NoteModel.priority == "normal").count(),
+        "low": base.filter(NoteModel.priority == "low").count(),
     }
 
     return {
@@ -187,9 +196,9 @@ def get_stats(db: Session) -> dict:
     }
 
 
-def search_notes(db: Session, term: str) -> List[NoteModel]:
+def search_notes(db: Session, term: str, user_id: int) -> List[NoteModel]:
     """
-    Search notes by case-insensitive match in title or content.
+    Search a user's notes by case-insensitive match in title or content.
     Returns list of matching NoteModel.
     """
     term = term.strip().lower()
@@ -198,11 +207,46 @@ def search_notes(db: Session, term: str) -> List[NoteModel]:
     return (
         db.query(NoteModel)
         .filter(
+            NoteModel.user_id == user_id,
             or_(
                 func.lower(NoteModel.title).contains(term),
                 func.lower(NoteModel.content).contains(term),
-            )
+            ),
         )
         .order_by(NoteModel.id)
         .all()
     )
+
+
+# -----------------------------------------------------------------------------
+# User CRUD
+# -----------------------------------------------------------------------------
+
+
+def get_user_by_email(db: Session, email: str) -> Optional[UserModel]:
+    """Find a user by email. Returns None if not found."""
+    return db.query(UserModel).filter(UserModel.email == email.strip().lower()).first()
+
+
+def create_user(db: Session, email: str, hashed_password: str, full_name: str) -> UserModel:
+    """
+    Create a new user with hashed password.
+    Caller must hash the password before passing; use auth.hash_password.
+    """
+    db_user = UserModel(
+        email=email.strip().lower(),
+        hashed_password=hashed_password,
+        full_name=full_name.strip(),
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+def authenticate_user(db: Session, email: str) -> Optional[UserModel]:
+    """
+    Find user by email. Returns UserModel if found, None otherwise.
+    Caller verifies password with auth.verify_password.
+    """
+    return get_user_by_email(db, email)
