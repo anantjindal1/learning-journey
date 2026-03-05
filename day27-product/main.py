@@ -5,10 +5,13 @@ Features: Chat (streaming), Research (RAG over company docs), Agent (function ca
 
 import json
 import os
+from contextlib import asynccontextmanager
 from typing import Optional
 
+import numpy as np
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from sentence_transformers import SentenceTransformer
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -25,15 +28,11 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 MODEL = "llama-3.1-8b-instant"
 
 # ---------------------------------------------------------------------------
-# In-memory RAG with SentenceTransformer (avoids ChromaDB dependency conflicts)
+# In-memory vector store (set during lifespan startup)
 # ---------------------------------------------------------------------------
-import numpy as np
-from sentence_transformers import SentenceTransformer
-
-# all-MiniLM-L6-v2 is fast and good for retrieval
-_embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 _doc_embeddings: list = []
 _doc_metadata: list = []
+_embedding_model = None
 
 # ---------------------------------------------------------------------------
 # Company docs (RAG source)
@@ -66,9 +65,11 @@ docs = [
     },
 ]
 
-def _index_docs():
-    """Index docs into in-memory vector store on startup."""
-    global _doc_embeddings, _doc_metadata
+
+def _index_documents():
+    """Initialize in-memory vector store, index all 5 company documents."""
+    global _doc_embeddings, _doc_metadata, _embedding_model
+    _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
     texts = [f"{d['title']}\n\n{d['content']}" for d in docs]
     _doc_embeddings = _embedding_model.encode(texts)
     _doc_metadata = [{"id": d["id"], "title": d["title"], "content": d["content"]} for d in docs]
@@ -79,7 +80,6 @@ def _retrieve_docs(query: str, top_k: int = 3) -> list[dict]:
     if len(_doc_embeddings) == 0:
         return []
     q_emb = _embedding_model.encode([query])
-    # Cosine similarity: dot product of normalized vectors
     scores = np.dot(_doc_embeddings, q_emb.T).flatten()
     norms = np.linalg.norm(_doc_embeddings, axis=1) * (np.linalg.norm(q_emb) + 1e-9)
     scores = scores / norms
@@ -87,7 +87,14 @@ def _retrieve_docs(query: str, top_k: int = 3) -> list[dict]:
     return [_doc_metadata[i] for i in top_indices]
 
 
-_index_docs()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # startup
+    _index_documents()
+    print("AI Product ready: docs indexed, notes loaded")
+    yield
+    # shutdown (nothing needed)
+
 
 # ---------------------------------------------------------------------------
 # Notes database (in-memory)
@@ -407,12 +414,16 @@ def run_agent(user_message: str, history: list = None) -> dict:
 # ---------------------------------------------------------------------------
 # FastAPI app
 # ---------------------------------------------------------------------------
-app = FastAPI(title="ProductivityAI", description="AI productivity assistant with Chat, Research, and Agent modes")
+app = FastAPI(
+    title="ProductivityAI",
+    description="AI productivity assistant with Chat, Research, and Agent modes",
+    lifespan=lifespan,
+)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
