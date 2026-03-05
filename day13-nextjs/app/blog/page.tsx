@@ -42,7 +42,7 @@ export default function BlogPage() {
     <div className="px-4 pb-16 pt-10 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-5xl space-y-8">
         <header className="space-y-3">
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
             Blog
           </h1>
           <p className="max-w-2xl text-sm text-slate-300 sm:text-base">

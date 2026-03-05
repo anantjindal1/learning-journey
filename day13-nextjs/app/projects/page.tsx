@@ -1,49 +1,56 @@
 import type { Metadata } from "next";
 import ProjectFilter, { type Project } from "@/components/ProjectFilter";
 
-// Keep project data in-code for now; this mirrors how a simple JSON-powered portfolio or CMS would behave.
+// Keep project data in-code for now; this mirrors how a simple JSON-powered
+// portfolio or CMS-like JSON source might behave.
 const projects: Project[] = [
   {
+    id: 1,
     title: "Todo CLI",
-    description: "A typed command-line todo manager using dataclasses and rich CLI ergonomics.",
-    tech: ["Python", "Dataclasses", "Type Hints"],
-    status: "Completed",
-    type: "Python",
+    desc: "Python CLI with dataclasses and type hints",
+    tags: ["Python", "CLI"],
+    status: "Complete",
+    color: "green",
   },
   {
-    title: "Tailwind UI Pages",
-    description: "A collection of landing pages and layouts built purely with HTML and Tailwind CSS.",
-    tech: ["HTML", "Tailwind CSS"],
-    status: "In Progress",
-    type: "React",
+    id: 2,
+    title: "Tailwind UI",
+    desc: "HTML pages with utility-first CSS",
+    tags: ["HTML", "Tailwind"],
+    status: "Complete",
+    color: "green",
   },
   {
-    title: "React Todo App",
-    description: "A focused todo application exploring hooks, local state, and component composition.",
-    tech: ["React", "Hooks"],
-    status: "Completed",
-    type: "React",
+    id: 3,
+    title: "React Todo",
+    desc: "Todo app with useState hooks and filters",
+    tags: ["React", "JavaScript"],
+    status: "Complete",
+    color: "green",
   },
   {
+    id: 4,
     title: "Personal Dashboard",
-    description: "A personal dashboard pulling in APIs for weather, tasks, and learning metrics. Deployed to the edge.",
-    tech: ["React", "TypeScript", "APIs"],
-    status: "Deployed",
-    type: "TypeScript",
+    desc: "Live dashboard with weather API and clock",
+    tags: ["React", "TypeScript", "Tailwind"],
+    status: "Live",
+    color: "blue",
   },
   {
+    id: 5,
     title: "Shopping Cart",
-    description: "E-commerce shopping cart prototype using React Context and reducers for predictable state.",
-    tech: ["React", "Context API", "useReducer"],
-    status: "Planned",
-    type: "React",
+    desc: "Global state with Context API and useReducer",
+    tags: ["React", "TypeScript"],
+    status: "Complete",
+    color: "green",
   },
   {
+    id: 6,
     title: "Movie Search",
-    description: "Movie search interface with debounced queries, custom hooks, and API error handling.",
-    tech: ["React", "Custom Hooks", "Debounce"],
-    status: "In Progress",
-    type: "React",
+    desc: "Real API calls with debounce and custom hooks",
+    tags: ["React", "TypeScript", "API"],
+    status: "Complete",
+    color: "green",
   },
 ];
 
@@ -56,7 +63,7 @@ export default function ProjectsPage() {
     <div className="px-4 pb-16 pt-10 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-5xl space-y-8">
         <header className="space-y-3">
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
             Projects
           </h1>
           <p className="max-w-2xl text-sm text-slate-300 sm:text-base">

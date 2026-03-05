@@ -31,7 +31,7 @@ export default function AboutPage() {
       <div className="mx-auto max-w-5xl space-y-14">
         <section className="grid gap-10 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:items-start">
           <div className="space-y-5">
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
               About Anant
             </h1>
             <div className="space-y-3 text-slate-200">
@@ -130,7 +130,7 @@ export default function AboutPage() {
         <section className="space-y-4">
           <h2 className="text-lg font-semibold sm:text-xl">Tech Stack</h2>
           {/* Use a simple responsive grid instead of a tag cloud so the stack stays scannable. */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {techStack.map((tech) => (
               <div
                 key={tech.label}

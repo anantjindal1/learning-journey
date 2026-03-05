@@ -1,6 +1,9 @@
 import Link from "next/link";
+import WeatherWidget from "../components/WeatherWidget";
+import VisitCounter from "../components/VisitCounter";
 
-// Use a server component for the homepage so it can stay lightweight and ready for future data fetching.
+// Use a server component for the homepage so it can stay lightweight and ready for server-side data fetching like the weather widget,
+// while small client islands (weather, visit counter) handle focused bits of interactivity and dynamic data.
 export default function Home() {
   const learningItems = [
     "TypeScript",
@@ -48,7 +51,7 @@ export default function Home() {
               Back to building — with AI as a copilot
             </p>
             <div className="space-y-3">
-              <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+              <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
                 Hi, I&apos;m Anant 👋
               </h1>
               <p className="text-balance text-lg text-slate-300 sm:text-xl">
@@ -56,16 +59,18 @@ export default function Home() {
                 blending a decade of experience with a brand new workflow.
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <WeatherWidget />
+            <VisitCounter />
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/projects"
-                className="inline-flex items-center justify-center rounded-full bg-sky-500 px-5 py-2.5 text-sm font-medium text-slate-950 shadow-sm transition hover:bg-sky-400"
+                className="inline-flex w-full items-center justify-center rounded-full bg-sky-500 px-5 py-2.5 text-sm font-medium text-slate-950 shadow-sm transition hover:bg-sky-400 sm:w-auto"
               >
                 View Projects
               </Link>
               <Link
                 href="/blog"
-                className="inline-flex items-center justify-center rounded-full border border-slate-700 px-5 py-2.5 text-sm font-medium text-slate-100 transition hover:border-slate-500 hover:bg-slate-900"
+                className="inline-flex w-full items-center justify-center rounded-full border border-slate-700 px-5 py-2.5 text-sm font-medium text-slate-100 transition hover:border-slate-500 hover:bg-slate-900 sm:w-auto"
               >
                 Read Blog
               </Link>
@@ -100,7 +105,7 @@ export default function Home() {
               Small, focused projects to rebuild fluency across the stack.
             </p>
           </div>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <article className="group rounded-2xl border border-slate-800 bg-slate-900/40 p-5 shadow-sm shadow-slate-950/40 transition hover:-translate-y-0.5 hover:border-sky-500/70 hover:shadow-sky-900/40">
               <div className="mb-3 text-2xl">🐍</div>
               <h3 className="mb-2 text-base font-semibold">
@@ -147,7 +152,7 @@ export default function Home() {
               View all posts
             </Link>
           </div>
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {blogPreviews.map((post) => (
               <article
                 key={post.slug}
