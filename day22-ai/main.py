@@ -3,7 +3,10 @@ AI-powered notes API using FastAPI and Groq.
 Provides endpoints for managing notes and AI-assisted productivity features.
 """
 
+import json
 import os
+import re
+from datetime import datetime
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -112,16 +115,37 @@ def health_check():
 def summarize_note(note_id: int):
     """
     Generates a one-sentence summary of a note using AI.
-    Helps users quickly grasp the essence of longer notes.
+    Uses RCTF prompt structure for reliable JSON output.
     """
     note = find_note(note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
     try:
-        summary = call_ai(
-            f"Summarize this note in one sentence: {note['title']} - {note['content']}"
-        )
-        return {"note_id": note_id, "title": note["title"], "summary": summary}
+        prompt = f"""
+ROLE: You are a note summarization assistant.
+TASK: Summarize this note in exactly one sentence.
+FORMAT: Return ONLY a JSON object: {{"summary": "your summary here"}}
+Do not include markdown, explanation, or any other text.
+
+Note title: {note['title']}
+Note content: {note['content']}
+"""
+        raw_response = call_ai(prompt.strip())
+        # Try to parse JSON; strip markdown code blocks if present
+        parsed_summary = raw_response
+        try:
+            text = raw_response.strip()
+            # Remove ```json and ``` wrappers if present
+            if text.startswith("```"):
+                text = re.sub(r"^```(?:json)?\s*", "", text)
+                text = re.sub(r"\s*```$", "", text)
+            data = json.loads(text)
+            parsed_summary = data.get("summary", raw_response)
+        except (json.JSONDecodeError, AttributeError):
+            pass
+        return {"note_id": note_id, "title": note["title"], "summary": parsed_summary}
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
 
@@ -147,17 +171,35 @@ def improve_note(note_id: int):
 @app.post("/ai/prioritize")
 def prioritize_notes():
     """
-    Sends all notes to the AI and gets a suggested priority order for today.
-    Helps users focus on what matters most.
+    Sends all notes to the AI with chain-of-thought reasoning.
+    Produces better prioritization by considering deadlines, impact, and dependencies.
     """
-    formatted = "\n".join(
+    formatted_notes = "\n".join(
         f"{i+1}. [{n['priority']}] {n['title']}: {n['content']}"
         for i, n in enumerate(notes)
     )
     try:
-        prioritization = call_ai(
-            f"Review these notes and suggest priority order for today. Brief reason for each:\n{formatted}"
-        )
+        prompt = f"""
+ROLE: You are a chief of staff helping prioritize work.
+
+TASK: Review these notes and recommend priority order for today.
+
+Think through this step by step:
+Step 1 - Identify notes with explicit deadlines or time pressure
+Step 2 - Assess business impact of each note  
+Step 3 - Check which notes are blocked on others
+Step 4 - Consider effort vs impact ratio
+
+Notes:
+{formatted_notes}
+
+FORMAT: After your reasoning, end with a clear numbered priority list:
+PRIORITY ORDER:
+1. [title] - [one sentence reason]
+2. [title] - [one sentence reason]
+(continue for all notes)
+"""
+        prioritization = call_ai(prompt.strip())
         return {"prioritization": prioritization}
     except Exception:
         raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
@@ -166,17 +208,101 @@ def prioritize_notes():
 @app.post("/ai/action-items/{note_id}")
 def extract_action_items(note_id: int):
     """
-    Extracts specific action items from a note as short, verb-led tasks.
-    Turns vague notes into a clear to-do list.
+    Extracts specific action items from a note using few-shot format.
+    Returns consistent bullet-point style for reliable parsing.
     """
     note = find_note(note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
     try:
-        action_items = call_ai(
-            f"Extract specific action items from this note. List each as a short task starting with a verb: {note['content']}"
-        )
+        prompt = f"""
+ROLE: You are a productivity assistant that extracts action items.
+
+EXAMPLE INPUT: "Met with client yesterday. Need to send revised proposal 
+by end of week. Client wants to see pricing for 3 tiers. 
+Follow up with legal about contract terms."
+
+EXAMPLE OUTPUT:
+- Send revised proposal to client by end of week
+- Prepare pricing for 3 tiers (basic, standard, premium)
+- Follow up with legal team about contract terms
+
+TASK: Extract action items from this note using the same format.
+Return ONLY the bullet points, no introduction or explanation.
+
+Note: {note['content']}
+"""
+        action_items = call_ai(prompt.strip())
         return {"note_id": note_id, "action_items": action_items}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
+
+
+@app.post("/ai/classify/{note_id}")
+def classify_note_urgency(note_id: int):
+    """
+    Classifies note urgency as URGENT, NORMAL, or LOW.
+    Uses constrained output for reliable single-word response.
+    """
+    note = find_note(note_id)
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    try:
+        prompt = f"""
+Classify the urgency of this note.
+Reply with ONLY one of these exact words: URGENT, NORMAL, or LOW
+Do not include any other text.
+
+Note: {note['title']}: {note['content']}
+"""
+        raw_response = call_ai(prompt.strip())
+        urgency = raw_response.strip().upper()
+        valid = {"URGENT", "NORMAL", "LOW"}
+        if urgency not in valid:
+            urgency = "NORMAL"
+        return {"note_id": note_id, "urgency": urgency}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
+
+
+@app.post("/ai/weekly-brief")
+def generate_weekly_brief():
+    """
+    Generates a structured weekly brief from all notes.
+    Sections: focus, action items due soon, delegate/drop, risks.
+    """
+    current_date = datetime.now().strftime("%A, %B %d, %Y")
+    formatted_notes = format_notes_for_context()
+    try:
+        prompt = f"""
+ROLE: You are an executive assistant preparing a weekly brief.
+CONTEXT: Today is {current_date}. These are all current notes and tasks.
+TASK: Create a concise weekly brief.
+FORMAT: Structure your response in exactly these sections:
+
+THIS WEEK'S FOCUS (top 3 priorities):
+- [item]
+
+ACTION ITEMS DUE SOON:
+- [item]
+
+THINGS TO DELEGATE OR DROP:
+- [item]
+
+KEY RISKS TO WATCH:
+- [item]
+
+Notes data:
+{formatted_notes}
+
+Keep each section to max 3 bullet points. Be specific and actionable.
+"""
+        response_text = call_ai(prompt.strip())
+        return {"brief": response_text, "generated_at": datetime.now().isoformat()}
     except Exception:
         raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
 
