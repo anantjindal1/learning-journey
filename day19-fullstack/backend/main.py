@@ -3,7 +3,6 @@ Notes REST API - FastAPI backend with PostgreSQL, SQLAlchemy, and authentication
 Provides CRUD endpoints for a notes app with user-specific data.
 """
 
-import os
 from typing import Optional
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query, Request, status
@@ -50,17 +49,9 @@ app = FastAPI(
     version="4.0.0",
 )
 
-# CORS: read allowed origins from ALLOWED_ORIGINS env var (comma-separated).
-# Default to "*" for development when not set.
-_allowed_origins_raw = os.getenv("ALLOWED_ORIGINS", "*").strip()
-_allowed_origins = (
-    [o.strip() for o in _allowed_origins_raw.split(",") if o.strip()]
-    if _allowed_origins_raw
-    else ["*"]
-)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_allowed_origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
